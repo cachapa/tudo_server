@@ -7,7 +7,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:uuid/uuid.dart';
 
-class CrdtServer {
+class TudoServer {
   final _nodeId = Uuid().v4();
   final _crdts = <String, Crdt>{};
   final _streams = <Crdt, CrdtStream>{};

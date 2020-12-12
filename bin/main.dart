@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:crdt_server/crdt_server.dart';
+import 'package:tudo_server/tudo_server.dart';
 
 void main(List<String> args) async {
   var parser = ArgParser()..addOption('port', abbr: 'p');
@@ -16,5 +16,5 @@ void main(List<String> args) async {
     return;
   }
 
-  await CrdtServer().serve(port);
+  await TudoServer().serve(port);
 }
