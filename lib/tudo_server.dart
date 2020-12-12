@@ -20,9 +20,8 @@ class TudoServer {
       // Return 404 for everything else
       ..all('/<ignored|.*>', _notFoundHandler);
 
-    var handler = const Pipeline()
-        .addMiddleware(logRequests())
-        .addHandler(router.handler);
+    var handler =
+        const Pipeline().addMiddleware(logRequests()).addHandler(router);
 
     var server = await io.serve(handler, '0.0.0.0', port);
     print('Serving at http://${server.address.host}:${server.port}');
