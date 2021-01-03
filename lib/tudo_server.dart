@@ -37,19 +37,22 @@ class TudoServer {
 
     try {
       var json = await request.readAsString();
-      await _merge(crdt, json);
+      await _merge(crdt, json, null);
       return await _crdtResponse(crdt);
     } on ClockDriftException catch (e) {
       return _errorResponse(e);
     }
   }
 
-  void _merge(Crdt crdt, String json) {
+  void _merge(Crdt crdt, String json, Hlc lastSync) {
     print('<= $json');
     crdt.mergeJson(json);
 
-    print('=> ${crdt.toJson()}');
-    _streams[crdt]?.add(crdt.toJson());
+    final changeset = crdt.toJson(modifiedSince: lastSync);
+    if (changeset != '{}') {
+      print('=> $changeset');
+      _streams[crdt]?.add(changeset);
+    }
   }
 
   Response _crdtResponse(Crdt crdt) => Response.ok(crdt.toJson());
@@ -63,7 +66,7 @@ class TudoServer {
     if (key.endsWith('/ws')) key = key.substring(0, key.length - 3);
 
     if (!_crdts.containsKey(key)) {
-      _crdts[key] = MapCrdt(_nodeId);
+      _crdts[key] = CrdtMap(_nodeId);
     }
     return _crdts[key];
   }
@@ -84,11 +87,18 @@ class TudoServer {
 
       webSocket.sink.addStream(crdtStream.stream);
 
-      webSocket.stream.listen((message) => _merge(crdt, message), onDone: () {
-        // crdtStream.close();
-        // _streams.remove(crdt);
-        print('Client disconnected from ${request.url.path}');
-      });
+      Hlc lastSync;
+      webSocket.stream.listen(
+        (message) {
+          _merge(crdt, message, lastSync);
+          lastSync = crdt.canonicalTime;
+        },
+        onDone: () {
+          // crdtStream.close();
+          // _streams.remove(crdt);
+          print('Client disconnected from ${request.url.path}');
+        },
+      );
     });
 
     return handler(request);
@@ -96,15 +106,9 @@ class TudoServer {
 }
 
 class CrdtStream {
-  final _controller = StreamController<String>();
+  final _controller = StreamController<String>.broadcast();
 
-  Stream<String> _stream;
-
-  Stream<String> get stream => _stream;
-
-  CrdtStream() {
-    _stream = _controller.stream.asBroadcastStream();
-  }
+  Stream<String> get stream => _controller.stream;
 
   void add(String event) => _controller.add(event);
 

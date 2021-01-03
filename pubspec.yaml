@@ -8,7 +8,10 @@ environment:
 
 dependencies:
   args: ^1.6.0
-  crdt: ^2.2.1
+  crdt: #^2.2.1
+    git:
+      url: git@github.com:cachapa/crdt.git
+      ref: modifiedSince
   http: ^0.12.2
   shelf: ^0.7.9
   shelf_router: ^0.7.1
