@@ -1,8 +1,13 @@
-#/bin/sh
+#!/bin/sh
 
-dart pub get
-echo "Compiling binary…"
-dart compile exe bin/main.dart -o tudo_server
-echo "Installing…"
-sudo mv tudo_server /usr/local/bin/
-echo "Done."
+echo "Checking sudo…"
+sudo echo 👍
+
+git pull
+pub get
+
+echo "Building binary…"
+dart2native bin/main.dart -o tudo_server
+
+echo "Moving binary to /usr/bin…"
+sudo mv tudo_server /usr/bin/
