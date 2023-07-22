@@ -10,18 +10,29 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:version/version.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import 'config.dart';
 import 'db_util.dart';
 import 'extensions.dart';
 
 class TudoServer {
+  final String? apiSecret;
   late final SqlCrdt _crdt;
 
   var userCount = 0;
 
-  Future<void> serve(int port) async {
+  TudoServer(this.apiSecret);
+
+  Future<void> serve({
+    required int port,
+    required String database,
+    required String dbHost,
+    required int dbPort,
+    String? dbUsername,
+    String? dbPassword,
+  }) async {
     _crdt = await PostgresCrdt.open(
-      'tudo',
+      database,
+      host: dbHost,
+      port: dbPort,
       username: dbUsername,
       password: dbPassword,
     );
@@ -164,14 +175,16 @@ class TudoServer {
       };
 
   Handler _validateSecret(Handler innerHandler) => (request) async {
+        // Skip if secret isn't set
+        if (apiSecret == null) return innerHandler(request);
+
         // Do not validate for public paths
         if (['check_version'].contains(request.url.path)) {
           return innerHandler(request);
         }
 
         final suppliedSecret = request.compatParams('api_secret') ?? '';
-        // TODO Compat secret length was reduced to 14
-        if (suppliedSecret.startsWith(apiSecret)) {
+        if (suppliedSecret == apiSecret) {
           return innerHandler(request);
         } else {
           return Response.forbidden('Invalid API secret: $suppliedSecret');

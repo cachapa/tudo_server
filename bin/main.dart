@@ -4,17 +4,43 @@ import 'package:args/args.dart';
 import 'package:tudo_server/tudo_server.dart';
 
 void main(List<String> args) async {
-  var parser = ArgParser()..addOption('port', abbr: 'p');
-  var result = parser.parse(args);
+  final argParser = ArgParser()
+    ..addOption(
+      'secret',
+      abbr: 's',
+      help:
+          'If set, only accepts client connections containing\n  this string.',
+    )
+    ..addOption('port', abbr: 'p', defaultsTo: '8080')
+    ..addOption('db', defaultsTo: 'tudo')
+    ..addOption('db-host', defaultsTo: 'localhost')
+    ..addOption('db-port', defaultsTo: '5432')
+    ..addOption('db-username')
+    ..addOption('db-password')
+    ..addFlag('help',
+        abbr: 'h', negatable: false, help: 'Display this help and exit');
 
-  var portStr = result['port'] ?? Platform.environment['PORT'] ?? '8080';
-  var port = int.tryParse(portStr);
+  try {
+    final result = argParser.parse(args);
 
-  if (port == null) {
-    stdout.writeln('Could not parse port value "$portStr" into a number.');
-    exitCode = 64;
-    return;
+    if (result['help']) {
+      print('Options:\n${argParser.usage}');
+      exit(0);
+    }
+
+    await TudoServer(result['secret']).serve(
+      port: int.parse(result['port']),
+      database: result['db'],
+      dbHost: result['db-host'],
+      dbPort: int.parse(result['db-port']),
+      dbUsername: result['db-username'],
+      dbPassword: result['db-password'],
+    );
+  } on ArgParserException catch (e) {
+    print('$e\n\nOptions:\n${argParser.usage}');
+    exit(64);
+  } catch (e) {
+    print('$e');
+    exit(64);
   }
-
-  await TudoServer().serve(port);
 }

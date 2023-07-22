@@ -1,7 +1,7 @@
 name: tudo_server
 description: Server counterpart to the tudo app
 version: 1.0.0
-homepage: https://github.com/cachapa/tudo
+homepage: https://github.com/cachapa/tudo_server
 
 environment:
   sdk: '>=2.18.0 <4.0.0'
