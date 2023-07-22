@@ -1,0 +1,38 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
+
+concurrency:
+  group: "deploy"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Load deploy key
+        run: |
+          mkdir ~/.ssh
+          echo "${{ secrets.CONFIG }}" > ~/.ssh/config
+          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1.3
+      - name: Get dependencies
+        run: dart pub get
+      - name: Build binary
+        run: dart compile exe bin/main.dart -o tudo_server
+      - name: Stop service
+        run: ssh server 'systemctl --user stop tudo'
+      - name: Upload binary
+        run: scp tudo_server server:~/tudo_server
+      - name: Start service
+        run: ssh server 'systemctl --user start tudo'
