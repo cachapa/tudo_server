@@ -28,8 +28,14 @@ jobs:
         uses: dart-lang/setup-dart@v1.3
       - name: Get dependencies
         run: dart pub get
+
       - name: Build binary
-        run: dart compile exe bin/main.dart -o tudo_server
+        uses: pguyot/arm-runner-action@v2
+        with:
+          commands: |
+            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm-release.zip
+            unzip dart.zip -q -d dart
+            dart/dart compile exe bin/main.dart -o tudo_server
       - name: Stop service
         run: ssh server 'systemctl --user stop tudo'
       - name: Upload binary
