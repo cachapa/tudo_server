@@ -33,7 +33,7 @@ jobs:
         with:
           image_additional_mb: 200
           commands: |
-            dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
+            dart compile exe bin/main.dart -o tudo_server
 #            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm64-release.zip
 #            unzip -q dart.zip
 #            dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
