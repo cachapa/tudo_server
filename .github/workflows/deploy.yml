@@ -33,8 +33,8 @@ jobs:
         with:
           image_additional_mb: 200
           commands: |
-            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm-release.zip
-            unzip dart.zip
+            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm64-release.zip
+            unzip -q dart.zip
             dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
       - name: Stop service
         run: ssh server 'systemctl --user stop tudo'
