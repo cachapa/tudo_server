@@ -31,6 +31,7 @@ jobs:
       - name: Build binary
         uses: pguyot/arm-runner-action@v2
         with:
+          image_additional_mb: 200
           commands: |
             curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm-release.zip
             unzip -q dart.zip -d dart
