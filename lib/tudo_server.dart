@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:crdt_sync/crdt_sync.dart';
 import 'package:postgres_crdt/postgres_crdt.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
@@ -16,8 +16,7 @@ import 'extensions.dart';
 class TudoServer {
   final String? apiSecret;
   late final SqlCrdt _crdt;
-
-  var userCount = 0;
+  late final CrdtSyncServer _crdtSync;
 
   TudoServer(this.apiSecret);
 
@@ -36,18 +35,13 @@ class TudoServer {
       username: dbUsername,
       password: dbPassword,
     );
-
     await DbUtil.createTables(_crdt);
+    _crdtSync = CrdtSyncServer(_crdt);
 
     final router = Router()
-      ..head('/check_version', (_) => Response(200))
+      ..head('/check_version', _checkVersion)
       ..get('/auth/<userId>', _auth)
-      ..get('/last_modified/<userId>', _lastModified)
-      ..get('/ws/<userId>', _wsHandler)
-      // TODO Compat request without user id in request path
-      ..get('/auth', _auth)
-      ..get('/last_modified', _lastModifiedCompat)
-      ..get('/ws', _wsHandlerCompat);
+      ..get('/ws/<userId>', _wsHandler);
 
     final handler = Pipeline()
         .addMiddleware(logRequests())
@@ -60,58 +54,37 @@ class TudoServer {
     print('Serving at http://${server.address.host}:${server.port}');
   }
 
+  Response _checkVersion(Request request) => _isVersionSupported(request)
+      ? Response(HttpStatus.noContent)
+      : Response(HttpStatus.upgradeRequired);
+
   /// By the time we arrive here, both the secret and credentials have been validated
-  Response _auth(Request request) => Response.ok('👍');
-
-  Future<Response> _lastModifiedCompat(Request request) =>
-      _lastModified(request, request.headers['user_id'] ?? '');
-
-  Future<Response> _lastModified(Request request, String userId) async {
-    final nodeId = request.compatParams('node_id')!;
-    final latest = await _crdt.lastModified(onlyNodeId: nodeId);
-    return Response.ok(jsonEncode({'last_modified': latest}));
-  }
-
-  Future<Response> _wsHandlerCompat(Request request) =>
-      _wsHandler(request, request.headers['user_id'] ?? '');
+  Response _auth(Request request) => Response(HttpStatus.noContent);
 
   Future<Response> _wsHandler(Request request, String userId) async {
-    final nodeId = request.compatParams('node_id')!;
-    final lastSend =
-        request.compatParams('last_receive')?.toHlc.apply(nodeId: _crdt.nodeId);
-
-    final slug = '${userId.short} (${nodeId.short})';
-    print('$slug: connect [${++userCount}]');
-
     final handler = webSocketHandler((WebSocketChannel webSocket) async {
-      List<StreamSubscription>? changeSubscriptions;
+      await _crdtSync.handle(
+        webSocket,
+        tables: ['users', 'user_lists', 'lists', 'todos'],
+        onConnect: (nodeId, __) => print(
+            '${userId.short} (${nodeId.short}): connect [${_crdtSync.clientCount}]'),
+        onDisconnect: (nodeId, code, reason) => print(
+            '${userId.short} (${nodeId.short}): leave [${_crdtSync.clientCount}] $code $reason'),
+        onChangesetReceived: (recordCounts) => print(
+            '⬇️ ${userId.short} ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+        onChangesetSent: (recordCounts) => print(
+            '⬆️ ${userId.short} ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+        queryBuilder: (table, lastModified, remoteNodeId) =>
+            _queryBuilder(userId, table, lastModified, remoteNodeId),
+      );
+    });
+    return await handler(request);
+  }
 
-      // Monitor remote changesets
-      webSocket.stream.listen((message) async {
-        final changeset = (jsonDecode(message) as Map<String, dynamic>)
-            .map((key, value) => MapEntry(
-                  key,
-                  (value as List).cast<Map<String, dynamic>>(),
-                ));
-
-        // print(JsonEncoder.withIndent('  ').convert(changeset));
-
-        final count = changeset.recordCount;
-        final affectedTables = changeset.keys.join(', ');
-        print('RECV ${userId.short} [$affectedTables] $count records');
-
-        // Merge remote changeset
-        await _crdt.merge(changeset);
-      }, onDone: () {
-        changeSubscriptions?.forEach((s) => s.cancel());
-        print('$slug: leave [${--userCount}] ');
-      }, onError: (e) {
-        print(e);
-      });
-
-      // Monitor changes
-      changeSubscriptions = [
-        _watchChangeset(webSocket, userId, nodeId, lastSend, 'users', '''
+  (String, List<Object?>)? _queryBuilder(
+      String userId, String table, Hlc lastModified, String remoteNodeId) {
+    final query = switch (table) {
+      'users' => '''
           SELECT users.id, users.name, users.is_deleted, users.hlc FROM
             (SELECT user_id, max(created_at) AS created_at FROM
               (SELECT list_id FROM user_lists WHERE user_id = ?1 AND is_deleted = 0) AS list_ids
@@ -121,58 +94,36 @@ class TudoServer {
           JOIN users ON users.id = user_ids.user_id
           WHERE node_id != ?2
             AND modified > CASE WHEN user_ids.created_at >= ?3 THEN '' ELSE ?3 END
-        '''),
-        _watchChangeset(webSocket, userId, nodeId, lastSend, 'user_lists', '''
+        ''',
+      'user_lists' => '''
           SELECT user_lists.list_id, user_id, position, user_lists.created_at, is_deleted, hlc FROM
             (SELECT list_id, created_at FROM user_lists WHERE user_id = ?1) AS own_lists
           JOIN user_lists ON own_lists.list_id = user_lists.list_id
           WHERE node_id != ?2
             AND modified > CASE WHEN own_lists.created_at >= ?3 THEN '' ELSE ?3 END
-        '''),
-        _watchChangeset(webSocket, userId, nodeId, lastSend, 'lists', '''
+        ''',
+      'lists' => '''
           SELECT lists.id, lists.name, lists.color, lists.creator_id,
             lists.created_at, lists.is_deleted, lists.hlc FROM user_lists
           JOIN lists ON list_id = lists.id AND user_id = ?1 AND user_lists.is_deleted = 0
           WHERE lists.node_id != ?2
             AND lists.modified > CASE WHEN user_lists.created_at >= ?3 THEN '' ELSE ?3 END
-        '''),
-        _watchChangeset(webSocket, userId, nodeId, lastSend, 'todos', '''
+        ''',
+      'todos' => '''
           SELECT todos.id, todos.list_id, todos.name, todos.done, todos.position,
             todos.creator_id, todos.created_at, todos.done_at, todos.done_by,
             todos.is_deleted, todos.hlc FROM user_lists
           JOIN todos ON user_lists.list_id = todos.list_id AND user_id = ?1 AND user_lists.is_deleted = 0
           WHERE todos.node_id != ?2
             AND todos.modified > CASE WHEN user_lists.created_at >= ?3 THEN '' ELSE ?3 END
-        '''),
-      ];
-    });
-
-    return await handler(request);
+        ''',
+      _ => throw "$table: I've never seen this table in my life!"
+    };
+    return (query, [userId, remoteNodeId, lastModified]);
   }
 
-  StreamSubscription _watchChangeset(WebSocketChannel webSocket, String userId,
-      String nodeId, Hlc? modifiedSince, String table, String query) {
-    modifiedSince ??= Hlc.zero(_crdt.nodeId);
-
-    return _crdt.watch(query, () => [userId, nodeId, modifiedSince]).listen(
-      (changeset) {
-        modifiedSince = _crdt.canonicalTime;
-
-        if (changeset.isNotEmpty) {
-          print('SEND ${userId.short} [$table] ${changeset.length} records');
-          webSocket.sink.add(jsonEncode({table: changeset}));
-        }
-      },
-    );
-  }
-
-  Handler _validateVersion(Handler innerHandler) => (request) async {
-        final userAgent = request.headers[HttpHeaders.userAgentHeader]!;
-        final version = Version.parse(userAgent.substring(
-            userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
-        final needsUpgrade = version < Version(2, 0, 0);
-        return needsUpgrade ? Response(426) : innerHandler(request);
-      };
+  Handler _validateVersion(Handler innerHandler) => (request) =>
+      _isVersionSupported(request) ? innerHandler(request) : Response(426);
 
   Handler _validateSecret(Handler innerHandler) => (request) async {
         // Skip if secret isn't set
@@ -183,7 +134,8 @@ class TudoServer {
           return innerHandler(request);
         }
 
-        final suppliedSecret = request.compatParams('api_secret') ?? '';
+        final suppliedSecret =
+            request.requestedUri.queryParameters['api_secret'] ?? '';
         if (suppliedSecret == apiSecret) {
           return innerHandler(request);
         } else {
@@ -199,7 +151,7 @@ class TudoServer {
 
         final userId =
             request.headers['user_id'] ?? request.url.pathSegments.last;
-        final token = request.compatParams('token');
+        final token = request.requestedUri.queryParameters['token'];
 
         // Validate user id length
         if (userId.length != 36) {
@@ -238,6 +190,13 @@ class TudoServer {
             : Response.forbidden(
                 'Invalid token for supplied user id: $userId\n$token');
       };
+
+  bool _isVersionSupported(Request request) {
+    final userAgent = request.headers[HttpHeaders.userAgentHeader]!;
+    final version = Version.parse(userAgent.substring(
+        userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
+    return version >= Version(2, 3, 0);
+  }
 }
 
 class CrdtStream {
@@ -248,10 +207,4 @@ class CrdtStream {
   void add(String event) => _controller.add(event);
 
   void close() => _controller.close();
-}
-
-// TODO Compat fall back to header parameters
-extension on Request {
-  String? compatParams(String key) =>
-      requestedUri.queryParameters[key] ?? headers[key];
 }
