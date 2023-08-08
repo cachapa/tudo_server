@@ -24,18 +24,19 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
       - name: Checkout
         uses: actions/checkout@v3
-#      - name: Setup Dart
-#        uses: dart-lang/setup-dart@v1.3
-#      - name: Get dependencies
-#        run: dart pub get
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1.3
+      - name: Get dependencies
+        run: dart pub get
       - name: Build binary
         uses: pguyot/arm-runner-action@v2
         with:
           image_additional_mb: 200
           commands: |
-            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm64-release.zip
-            unzip -q dart.zip
             dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
+#            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm64-release.zip
+#            unzip -q dart.zip
+#            dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
       - name: Stop service
         run: ssh server 'systemctl --user stop tudo'
       - name: Upload binary
