@@ -23,23 +23,16 @@ jobs:
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@v1.3
+        run: ssh server 'git clone git@github.com:cachapa/tudo_server.git'
       - name: Get dependencies
-        run: dart pub get
+        run: ssh server '/opt/dart-sdk/bin/dart pub get -C tudo_server'
       - name: Build binary
-        uses: pguyot/arm-runner-action@v2
-        with:
-          base_image: raspbian_lite:latest
-          image_additional_mb: 200
-          commands: |
-            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm64-release.zip
-            unzip -q dart.zip
-            dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
+        run: ssh server '/opt/dart-sdk/bin/dart compile exe tudo_server/bin/main.dart -o tudo-server.new'
       - name: Stop service
         run: ssh server 'systemctl --user stop tudo'
-      - name: Upload binary
-        run: scp tudo_server server:~/tudo_server
+      - name: Replace binary
+        run: ssh server 'mv tudo-server.new tudo-server'
       - name: Start service
         run: ssh server 'systemctl --user start tudo'
+      - name: Cleanup
+        run: ssh server 'rm -fr tudo_server'
