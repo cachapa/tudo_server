@@ -31,12 +31,12 @@ jobs:
       - name: Build binary
         uses: pguyot/arm-runner-action@v2
         with:
+          base_image: raspbian_lite:latest
           image_additional_mb: 200
           commands: |
-            dart compile exe bin/main.dart -o tudo_server
-#            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm64-release.zip
-#            unzip -q dart.zip
-#            dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
+            curl -o dart.zip https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-arm64-release.zip
+            unzip -q dart.zip
+            dart-sdk/bin/dart compile exe bin/main.dart -o tudo_server
       - name: Stop service
         run: ssh server 'systemctl --user stop tudo'
       - name: Upload binary
