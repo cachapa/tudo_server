@@ -36,7 +36,10 @@ class TudoServer {
       password: dbPassword,
     );
     await DbUtil.createTables(_crdt);
-    _crdtSync = CrdtSyncServer(_crdt);
+    _crdtSync = CrdtSyncServer(
+      _crdt,
+      // verbose: true,
+    );
 
     final router = Router()
       ..head('/check_version', _checkVersion)
@@ -62,22 +65,29 @@ class TudoServer {
   Response _auth(Request request) => Response(HttpStatus.noContent);
 
   Future<Response> _wsHandler(Request request, String userId) async {
-    final handler = webSocketHandler((WebSocketChannel webSocket) async {
-      await _crdtSync.handle(
-        webSocket,
-        tables: ['users', 'user_lists', 'lists', 'todos'],
-        onConnect: (nodeId, __) => print(
-            '${userId.short} (${nodeId.short}): connect [${_crdtSync.clientCount}]'),
-        onDisconnect: (nodeId, code, reason) => print(
-            '${userId.short} (${nodeId.short}): leave [${_crdtSync.clientCount}] $code $reason'),
-        onChangesetReceived: (recordCounts) => print(
-            '⬇️ ${userId.short} ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
-        onChangesetSent: (recordCounts) => print(
-            '⬆️ ${userId.short} ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
-        queryBuilder: (table, lastModified, remoteNodeId) =>
-            _queryBuilder(userId, table, lastModified, remoteNodeId),
-      );
-    });
+    final handler = webSocketHandler(
+      pingInterval: Duration(seconds: 20),
+      (WebSocketChannel webSocket) async {
+        late String remoteNodeId;
+        await _crdtSync.handle(
+          webSocket,
+          tables: ['users', 'user_lists', 'lists', 'todos'],
+          onConnect: (nodeId, __) {
+            remoteNodeId = nodeId;
+            print(
+                '${userId.short} (${nodeId.short}): connect [${_crdtSync.clientCount}]');
+          },
+          onDisconnect: (nodeId, code, reason) => print(
+              '${userId.short} (${nodeId.short}): disconnect [${_crdtSync.clientCount}] $code ${reason ?? ''}'),
+          onChangesetReceived: (recordCounts) => print(
+              '⬇️ ${userId.short} (${remoteNodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+          onChangesetSent: (recordCounts) => print(
+              '⬆️ ${userId.short} (${remoteNodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+          queryBuilder: (table, lastModified, remoteNodeId) =>
+              _queryBuilder(userId, table, lastModified, remoteNodeId),
+        );
+      },
+    );
     return await handler(request);
   }
 
