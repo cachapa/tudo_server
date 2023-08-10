@@ -205,7 +205,7 @@ class TudoServer {
     final userAgent = request.headers[HttpHeaders.userAgentHeader]!;
     final version = Version.parse(userAgent.substring(
         userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
-    return version >= Version(2, 3, 0);
+    return version >= Version(2, 3, 1);
   }
 }
 
