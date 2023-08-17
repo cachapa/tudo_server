@@ -10,3 +10,7 @@ extension StringX on String {
 extension RequestX on Request {
   Map<String, String> get queryParameters => requestedUri.queryParameters;
 }
+
+extension DateTimeX on DateTime {
+  String get toUtcString => toUtc().toIso8601String();
+}
