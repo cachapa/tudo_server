@@ -95,6 +95,7 @@ class TudoServer {
 
     var server = await io.serve(handler, '0.0.0.0', port);
     print('Serving at http://${server.address.host}:${server.port}');
+    if (apiSecret != null) print('Secret: $apiSecret');
   }
 
   Response _checkVersion(Request request) => _isVersionSupported(request)
@@ -178,7 +179,7 @@ class TudoServer {
         if (suppliedSecret == apiSecret) {
           return innerHandler(request);
         } else {
-          return Response.forbidden('Invalid API secret: $suppliedSecret');
+          return _forbidden('Invalid API secret: $suppliedSecret');
         }
       };
 
@@ -196,12 +197,12 @@ class TudoServer {
 
         // Validate user id length
         if (userId.length != 36) {
-          return Response.forbidden('Invalid user id: $userId');
+          return _forbidden('Invalid user id: $userId');
         }
 
         // Validate token length
         if (token == null || token.length < 32 || token.length > 128) {
-          return Response.forbidden('Invalid token: $token');
+          return _forbidden('Invalid token: $token');
         }
 
         // Associate token with user id, if it doesn't exist yet
@@ -227,8 +228,7 @@ class TudoServer {
         // Verify that user id and token match
         return token == knownToken
             ? innerHandler(request)
-            : Response.forbidden(
-                'Invalid token for supplied user id: $userId\n$token');
+            : _forbidden('Invalid token for supplied user id: $userId\n$token');
       };
 
   bool _isVersionSupported(Request request) {
@@ -236,6 +236,11 @@ class TudoServer {
     final version = Version.parse(userAgent.substring(
         userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
     return version >= Version(2, 3, 3);
+  }
+
+  Response _forbidden(String message) {
+    print('Forbidden: $message');
+    return Response.forbidden(message);
   }
 }
 
