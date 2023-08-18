@@ -49,7 +49,6 @@ const _queries = {
 class TudoServer {
   final String? apiSecret;
   late final SqlCrdt _crdt;
-  late final CrdtSyncServer _syncServer;
 
   var _clientCount = 0;
   var _userNames = <String, String>{};
@@ -77,10 +76,6 @@ class TudoServer {
       rethrow;
     }
     await DbUtil.createTables(_crdt);
-    _syncServer = CrdtSyncServer(
-      _crdt,
-      verbose: true,
-    );
 
     // Watch and cache user names
     _crdt.watch("SELECT id, name FROM users WHERE name <> ''").listen(
