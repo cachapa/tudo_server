@@ -51,6 +51,9 @@ class TudoServer {
   late final SqlCrdt _crdt;
   late final CrdtSyncServer _syncServer;
 
+  var _clientCount = 0;
+  var _userNames = <String, String>{};
+
   TudoServer(this.apiSecret);
 
   Future<void> serve({
@@ -78,6 +81,12 @@ class TudoServer {
       _crdt,
       verbose: true,
     );
+
+    // Watch and cache user names
+    _crdt.watch("SELECT id, name FROM users WHERE name <> ''").listen(
+        (records) => _userNames = {
+              for (final r in records) r['id'] as String: r['name'] as String
+            });
 
     final router = Router()
       ..head('/check_version', _checkVersion)
@@ -148,13 +157,13 @@ class TudoServer {
           changesetQueries:
               _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
           onConnect: (nodeId, __) => print(
-              '${userId.short} (${nodeId.short}): connect [${_syncServer.clientCount}]'),
+              '${_getName(userId)} (${nodeId.short}): connect [${_clientCount++}]'),
           onDisconnect: (nodeId, code, reason) => print(
-              '${userId.short} (${nodeId.short}): disconnect [${_syncServer.clientCount}] $code ${reason ?? ''}'),
+              '${_getName(userId)} (${nodeId.short}): disconnect [${_clientCount--}] $code ${reason ?? ''}'),
           onChangesetReceived: (nodeId, recordCounts) => print(
-              '⬇️ ${userId.short} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+              '⬇️ ${_getName(userId)} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
           onChangesetSent: (nodeId, recordCounts) => print(
-              '⬆️ ${userId.short} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+              '⬆️ ${_getName(userId)} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
           // verbose: true,
         );
       },
@@ -242,6 +251,8 @@ class TudoServer {
     print('Forbidden: $message');
     return Response.forbidden(message);
   }
+
+  String _getName(String userId) => _userNames[userId] ?? userId.short;
 }
 
 class CrdtStream {
