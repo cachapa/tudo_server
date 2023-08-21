@@ -131,7 +131,7 @@ class TudoServer {
 
   Future<Response> _getChangeset(
       Request request, String userId, String peerId) async {
-    final changeset = await CrdtSync.getChangeset(
+    final changeset = await CrdtSync.buildChangeset(
       _crdt,
       _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
       isClient: false,
@@ -145,16 +145,15 @@ class TudoServer {
     final handler = webSocketHandler(
       pingInterval: Duration(seconds: 20),
       (WebSocketChannel webSocket) {
-        CrdtSync(
+        CrdtSync.server(
           _crdt,
           webSocket,
-          isClient: false,
           changesetQueries:
               _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
           onConnect: (nodeId, __) => print(
-              '${_getName(userId)} (${nodeId.short}): connect [${_clientCount++}]'),
+              '${_getName(userId)} (${nodeId.short}): connect [${++_clientCount}]'),
           onDisconnect: (nodeId, code, reason) => print(
-              '${_getName(userId)} (${nodeId.short}): disconnect [${_clientCount--}] $code ${reason ?? ''}'),
+              '${_getName(userId)} (${nodeId.short}): disconnect [${++_clientCount}] $code ${reason ?? ''}'),
           onChangesetReceived: (nodeId, recordCounts) => print(
               '⬇️ ${_getName(userId)} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
           onChangesetSent: (nodeId, recordCounts) => print(
