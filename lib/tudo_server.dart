@@ -84,6 +84,7 @@ class TudoServer {
 
     final router = Router()
       ..head('/check_version', _checkVersion)
+      ..post('/auth/login', _login)
       ..post('/lists/<userId>/<listId>', _joinList)
       ..get('/changeset/<userId>/<peerId>', _getChangeset)
       ..get('/ws/<userId>', _wsHandler);
@@ -99,6 +100,19 @@ class TudoServer {
 
   /// By the time we arrive here, the version has already been checked
   Response _checkVersion(Request request) => Response(HttpStatus.noContent);
+
+  Future<Response> _login(Request request) async {
+    final token = request.headers[HttpHeaders.authorizationHeader]
+            ?.replaceFirst('bearer ', '') ??
+        request.requestedUri.queryParameters['token'];
+    final result = await _crdt.query(
+        'SELECT user_id FROM auth WHERE token = ?1 AND is_deleted = 0',
+        [token]);
+    final userId = result.firstOrNull?['user_id'];
+    return userId == null
+        ? Response.forbidden('Invalid token')
+        : Response.ok(jsonEncode({'user_id': userId}));
+  }
 
   Future<Response> _joinList(
       Request request, String userId, String listId) async {
