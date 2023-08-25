@@ -145,6 +145,7 @@ class TudoServer {
           webSocket,
           changesetQueries:
               _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
+          validateRecord: _validateRecord,
           onConnect: (nodeId, __) => print(
               '${_getName(userId)} (${nodeId.short}): connect [${++_clientCount}]'),
           onDisconnect: (nodeId, code, reason) => print(
@@ -222,6 +223,10 @@ class TudoServer {
     print('Forbidden: $message');
     return Response.forbidden(message);
   }
+
+  bool _validateRecord(String table, Map<String, dynamic> record) =>
+      // Disallow external changes to the auth table
+      table != 'auth';
 
   String _getName(String userId) => _userNames[userId] ?? userId.short;
 }
