@@ -47,13 +47,10 @@ const _queries = {
 };
 
 class TudoServer {
-  final String? apiSecret;
   late final SqlCrdt _crdt;
 
   var _clientCount = 0;
   var _userNames = <String, String>{};
-
-  TudoServer(this.apiSecret);
 
   Future<void> serve({
     required int port,
@@ -93,13 +90,11 @@ class TudoServer {
     final handler = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(_validateVersion)
-        .addMiddleware(_validateSecret)
         .addMiddleware(_validateCredentials)
         .addHandler(router);
 
     var server = await io.serve(handler, '0.0.0.0', port);
     print('Serving at http://${server.address.host}:${server.port}');
-    if (apiSecret != null) print('Secret: $apiSecret');
   }
 
   Response _checkVersion(Request request) => _isVersionSupported(request)
@@ -167,24 +162,6 @@ class TudoServer {
 
   Handler _validateVersion(Handler innerHandler) => (request) =>
       _isVersionSupported(request) ? innerHandler(request) : Response(426);
-
-  Handler _validateSecret(Handler innerHandler) => (request) async {
-        // Skip if secret isn't set
-        if (apiSecret == null) return innerHandler(request);
-
-        // Do not validate for public paths
-        if (['check_version'].contains(request.url.path)) {
-          return innerHandler(request);
-        }
-
-        final suppliedSecret =
-            request.requestedUri.queryParameters['api_secret'] ?? '';
-        if (suppliedSecret == apiSecret) {
-          return innerHandler(request);
-        } else {
-          return _forbidden('Invalid API secret: $suppliedSecret');
-        }
-      };
 
   Handler _validateCredentials(Handler innerHandler) => (request) async {
         // Do not validate for public paths

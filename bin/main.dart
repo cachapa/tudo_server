@@ -5,12 +5,6 @@ import 'package:tudo_server/tudo_server.dart';
 
 void main(List<String> args) async {
   final argParser = ArgParser()
-    ..addOption(
-      'secret',
-      abbr: 's',
-      help:
-          'If set, only accepts client connections containing\n  this string.',
-    )
     ..addOption('port', abbr: 'p', defaultsTo: '8080')
     ..addOption('db', defaultsTo: 'tudo')
     ..addOption('db-host', defaultsTo: 'localhost')
@@ -28,7 +22,7 @@ void main(List<String> args) async {
       exit(0);
     }
 
-    await TudoServer(result['secret']).serve(
+    await TudoServer().serve(
       port: int.parse(result['port']),
       database: result['db'],
       dbHost: result['db-host'],
