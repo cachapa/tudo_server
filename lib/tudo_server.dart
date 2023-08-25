@@ -46,6 +46,8 @@ const _queries = {
   ''',
 };
 
+final minimumVersion = Version(2, 3, 4);
+
 class TudoServer {
   late final SqlCrdt _crdt;
 
@@ -82,7 +84,6 @@ class TudoServer {
 
     final router = Router()
       ..head('/check_version', _checkVersion)
-      ..get('/auth/<userId>', _auth)
       ..post('/lists/<userId>/<listId>', _joinList)
       ..get('/changeset/<userId>/<peerId>', _getChangeset)
       ..get('/ws/<userId>', _wsHandler);
@@ -90,23 +91,23 @@ class TudoServer {
     final handler = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(_validateVersion)
-        .addMiddleware(_validateCredentials)
         .addHandler(router);
 
-    var server = await io.serve(handler, '0.0.0.0', port);
+    final server = await io.serve(handler, '0.0.0.0', port);
     print('Serving at http://${server.address.host}:${server.port}');
   }
 
-  Response _checkVersion(Request request) => _isVersionSupported(request)
-      ? Response(HttpStatus.noContent)
-      : Response(HttpStatus.upgradeRequired);
-
-  /// By the time we arrive here, both the secret and credentials have been validated
-  Response _auth(Request request, String userId) =>
-      Response(HttpStatus.noContent);
+  /// By the time we arrive here, the version has already been checked
+  Response _checkVersion(Request request) => Response(HttpStatus.noContent);
 
   Future<Response> _joinList(
       Request request, String userId, String listId) async {
+    try {
+      await _validateAuth(request, userId);
+    } catch (e) {
+      return Response.forbidden('$e');
+    }
+
     await _crdt.transaction((txn) async {
       final maxPosition = (await txn.query('''
         SELECT max(position) as max_position FROM user_lists
@@ -126,6 +127,12 @@ class TudoServer {
 
   Future<Response> _getChangeset(
       Request request, String userId, String peerId) async {
+    try {
+      await _validateAuth(request, userId);
+    } catch (e) {
+      return Response.forbidden('$e');
+    }
+
     final changeset = await CrdtSync.buildChangeset(
       _crdt,
       _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
@@ -137,6 +144,12 @@ class TudoServer {
   }
 
   Future<Response> _wsHandler(Request request, String userId) async {
+    try {
+      await _validateAuth(request, userId);
+    } catch (e) {
+      return Response.forbidden('$e');
+    }
+
     final handler = webSocketHandler(
       pingInterval: Duration(seconds: 20),
       (WebSocketChannel webSocket) {
@@ -161,67 +174,54 @@ class TudoServer {
     return await handler(request);
   }
 
-  Handler _validateVersion(Handler innerHandler) => (request) =>
-      _isVersionSupported(request) ? innerHandler(request) : Response(426);
-
-  Handler _validateCredentials(Handler innerHandler) => (request) async {
-        // Do not validate for public paths
-        if (['check_version'].contains(request.url.path)) {
-          return innerHandler(request);
-        }
-
-        final userId =
-            request.headers['user_id'] ?? request.url.pathSegments[1];
-        final token = request.headers[HttpHeaders.authorizationHeader]
-                ?.replaceFirst('bearer ', '') ??
-            request.requestedUri.queryParameters['token'];
-
-        // Validate user id length
-        if (userId.length != 36) {
-          return _forbidden('Invalid user id: $userId');
-        }
-
-        // Validate token length
-        if (token == null || token.length < 32 || token.length > 128) {
-          return _forbidden('Invalid token: $token');
-        }
-
-        // Associate token with user id, if it doesn't exist yet
-        String? knownToken;
-        await _crdt.transaction((txn) async {
-          // Check if there's a token in the db
-          // This is done in a transaction to make sure the check and creation
-          // happen atomically
-          final result = await txn
-              .query('SELECT token FROM auth WHERE user_id = ?1', [userId]);
-          knownToken = result.firstOrNull?['token'] as String?;
-
-          // Associate new token with user id
-          if (knownToken == null) {
-            await txn.execute('''
-              INSERT INTO auth (user_id, token, created_at)
-              VALUES (?1, ?2, ?3)
-            ''', [userId, token, DateTime.now()]);
-            knownToken = token;
-          }
-        });
-
-        // Verify that user id and token match
-        return token == knownToken
+  Handler _validateVersion(Handler innerHandler) => (request) {
+        final userAgent = request.headers[HttpHeaders.userAgentHeader]!;
+        final version = Version.parse(userAgent.substring(
+            userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
+        return version >= minimumVersion
             ? innerHandler(request)
-            : _forbidden('Invalid token for supplied user id: $userId\n$token');
+            : Response(HttpStatus.upgradeRequired);
       };
 
-  bool _isVersionSupported(Request request) {
-    final userAgent = request.headers[HttpHeaders.userAgentHeader]!;
-    final version = Version.parse(userAgent.substring(
-        userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
-    return version >= Version(2, 3, 4);
-  }
+  Future<void> _validateAuth(Request request, String userId) async {
+    // Validate token
+    final token = request.headers[HttpHeaders.authorizationHeader]
+            ?.replaceFirst('bearer ', '') ??
+        request.requestedUri.queryParameters['token'];
+    if (token == null || token.length < 32 || token.length > 128) {
+      throw 'Invalid token: $token';
+    }
 
-  Response _forbidden(String message) {
-    print('Forbidden: $message');
-    return Response.forbidden(message);
+    // Validate user id
+    final userId = request.headers['user_id'] ?? request.url.pathSegments[1];
+    if (userId.length != 36) {
+      throw 'Invalid user id: $userId';
+    }
+
+    // Associate token with user id, if it doesn't exist yet
+    String? knownToken;
+    await _crdt.transaction((txn) async {
+      // Check if there's a token in the db
+      // This is done in a transaction to make sure the check and creation
+      // happen atomically
+      final result = await txn
+          .query('SELECT token FROM auth WHERE user_id = ?1', [userId]);
+      knownToken = result.firstOrNull?['token'] as String?;
+
+      // Associate new token with user id
+      if (knownToken == null) {
+        await txn.execute('''
+          INSERT INTO auth (user_id, token, created_at)
+          VALUES (?1, ?2, ?3)
+        ''', [userId, token, DateTime.now()]);
+        knownToken = token;
+      }
+    });
+
+    // Verify that user id and token match
+    if (token != knownToken) {
+      throw 'Invalid token for supplied user id: $userId\n$token';
+    }
   }
 
   bool _validateRecord(String table, Map<String, dynamic> record) =>
