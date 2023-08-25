@@ -115,7 +115,7 @@ class TudoServer {
         ? Response.forbidden('Invalid token')
         : Response.ok(jsonEncode({
             'user_id': userId,
-            'changeset': _buildChangeset(userId),
+            'changeset': await _buildChangeset(userId),
           }));
   }
 

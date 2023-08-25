@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   args: ^2.4.2
-  crdt_sync: ^0.0.6
+  crdt_sync: 0.0.7
 #    path: ../../crdt_sync
   http: ^1.1.0
   postgres_crdt: ^1.1.1+1
