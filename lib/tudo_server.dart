@@ -105,13 +105,18 @@ class TudoServer {
     final token = request.headers[HttpHeaders.authorizationHeader]
             ?.replaceFirst('bearer ', '') ??
         request.requestedUri.queryParameters['token'];
+
     final result = await _crdt.query(
         'SELECT user_id FROM auth WHERE token = ?1 AND is_deleted = 0',
         [token]);
-    final userId = result.firstOrNull?['user_id'];
+    final userId = result.firstOrNull?['user_id'] as String?;
+
     return userId == null
         ? Response.forbidden('Invalid token')
-        : Response.ok(jsonEncode({'user_id': userId}));
+        : Response.ok(jsonEncode({
+            'user_id': userId,
+            'changeset': _buildChangeset(userId),
+          }));
   }
 
   Future<Response> _joinList(
@@ -147,15 +152,18 @@ class TudoServer {
       return Response.forbidden('$e');
     }
 
-    final changeset = await CrdtSync.buildChangeset(
-      _crdt,
-      _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
-      isClient: false,
-      peerId: peerId,
-      afterHlc: Hlc.zero(_crdt.nodeId),
-    );
+    final changeset = await _buildChangeset(userId, peerId);
     return Response.ok(jsonEncode(changeset));
   }
+
+  Future<CrdtChangeset> _buildChangeset(String userId, [String? peerId]) =>
+      CrdtSync.buildChangeset(
+        _crdt,
+        _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
+        isClient: false,
+        peerId: peerId,
+        afterHlc: Hlc.zero(_crdt.nodeId),
+      );
 
   Future<Response> _wsHandler(Request request, String userId) async {
     try {

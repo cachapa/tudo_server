@@ -85,10 +85,10 @@ packages:
     dependency: "direct main"
     description:
       name: crdt_sync
-      sha256: "0c54a6ee175cf7d67ae29f8e2e17dad51aee44aa08730f27ba22950dfb684b64"
+      sha256: c100c3f02b4f9d2dee3cc234edcff09430b822c32309cb951293e691cc3b18ae
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.5"
+    version: "0.0.6"
   crypto:
     dependency: transitive
     description:
@@ -469,10 +469,10 @@ packages:
     dependency: transitive
     description:
       name: vm_service
-      sha256: "0fae432c85c4ea880b33b497d32824b97795b04cdaa74d270219572a1f50268d"
+      sha256: c538be99af830f478718b51630ec1b6bee5e74e52c8a802d328d9e71d35d2583
       url: "https://pub.dev"
     source: hosted
-    version: "11.9.0"
+    version: "11.10.0"
   watcher:
     dependency: transitive
     description:
