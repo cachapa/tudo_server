@@ -22,6 +22,9 @@ jobs:
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
+      - name: Clean slate
+        run: ssh server 'rm -fr tudo_server'
       - name: Checkout
         run: ssh server 'git clone git@github.com:cachapa/tudo_server.git'
       - name: Get dependencies
@@ -36,3 +39,12 @@ jobs:
         run: ssh server 'systemctl --user start tudo'
       - name: Cleanup
         run: ssh server 'rm -fr tudo_server'
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ github.run_number }}"
+          release_name: "v${{ github.run_number }}"
