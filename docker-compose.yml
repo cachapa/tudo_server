@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   tudo_server:
-    image: ghcr.io/cachapa/tudo_server:latest
+    image: ghcr.io/cachapa/tudo_server:v35
     environment:
       TUDO_SERVER_DB: tudo
       TUDO_SERVER_DB_HOST: database
