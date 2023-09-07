@@ -6,3 +6,9 @@ build/
 .github/
 .gitignore
 .packages
+docker-compose.yml
+install.sh
+LICENSE
+README.md
+server.iml
+tudo.svg
