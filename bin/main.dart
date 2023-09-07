@@ -22,13 +22,22 @@ void main(List<String> args) async {
       exit(0);
     }
 
+    final env = Platform.environment;
+
+    final port = int.parse(env['TUDO_SERVER_PORT'] ?? result['port']);
+    final database = env['TUDO_SERVER_DB'] ?? result['db'];
+    final dbHost = env['TUDO_SERVER_DB_HOST'] ?? result['db-host'];
+    final dbPort = int.parse(env['TUDO_SERVER_DB_PORT'] ?? result['db-port']);
+    final dbUsername = env['TUDO_SERVER_DB_USERNAME'] ?? result['db-username'];
+    final dbPassword = env['TUDO_SERVER_DB_PASSWORD'] ?? result['db-password'];
+
     await TudoServer().serve(
-      port: int.parse(result['port']),
-      database: result['db'],
-      dbHost: result['db-host'],
-      dbPort: int.parse(result['db-port']),
-      dbUsername: result['db-username'],
-      dbPassword: result['db-password'],
+      port: port,
+      database: database,
+      dbHost: dbHost,
+      dbPort: dbPort,
+      dbUsername: dbUsername,
+      dbPassword: dbPassword,
     );
   } on ArgParserException catch (e) {
     print('$e\n\nOptions:\n${argParser.usage}');
