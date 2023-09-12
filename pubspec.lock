@@ -81,14 +81,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.6.3"
+  crdt:
+    dependency: transitive
+    description:
+      name: crdt
+      sha256: "9c1fef436600e80fc7e9e1668d822d0632ee3c277a49282e1eb0afb3a312f7fd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.2"
   crdt_sync:
     dependency: "direct main"
     description:
       name: crdt_sync
-      sha256: "8b8ad3545ddc41d4b50a489517fd3cfab66b440b6a95ab596f71fd2dcd9855c9"
+      sha256: b8058163a804e42781a842503d5ad2c3d7c7ad046f908aae7660de780da56722
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.8"
+    version: "1.0.1"
   crypto:
     dependency: transitive
     description:
@@ -197,10 +205,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: "3c74dbf8763d36539f114c799d8a2d87343b5067e9d796ca22b5eb8437090ee3"
+      sha256: a6e590c838b18133bb482a2745ad77c5bb7715fb0451209e1a7567d416678b8e
       url: "https://pub.dev"
     source: hosted
-    version: "1.9.1"
+    version: "1.10.0"
   mime:
     dependency: transitive
     description:
@@ -261,10 +269,10 @@ packages:
     dependency: "direct main"
     description:
       name: postgres_crdt
-      sha256: "1d8780346e9740605b3c1b24d063c8d9977162fdb398c0167ddd33498b1344e3"
+      sha256: "274a4894ea0d35220934debc6f93f5961bb38a5a351640875ecc956e239703cc"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1+1"
+    version: "2.0.0"
   pub_semver:
     dependency: transitive
     description:
@@ -361,22 +369,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
+  sprintf:
+    dependency: transitive
+    description:
+      name: sprintf
+      sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.0"
   sql_crdt:
     dependency: transitive
     description:
       name: sql_crdt
-      sha256: f64190be49a2c9e5105536e2c9d139fb40c803616639e00813dbf05b49388196
+      sha256: "6d9af96ee8a45be252ad9fbff7aed785a61ab16862a47d187ca489bdeba060d4"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1+1"
+    version: "2.0.0"
   sqlparser:
     dependency: transitive
     description:
       name: sqlparser
-      sha256: "9611f46d30a4e8286e54d17a1b5182d132512dc6fc3da90c45ad8ec2828a58b1"
+      sha256: b3062cc9ec1151348f57af44b88d67c91b81858db3be76395cfa5ec094c59ce8
       url: "https://pub.dev"
     source: hosted
-    version: "0.30.3"
+    version: "0.31.1"
   stack_trace:
     dependency: transitive
     description:
@@ -453,10 +469,10 @@ packages:
     dependency: transitive
     description:
       name: uuid
-      sha256: "648e103079f7c64a36dc7d39369cabb358d377078a051d6ae2ad3aa539519313"
+      sha256: e03928880bdbcbf496fb415573f5ab7b1ea99b9b04f669c01104d085893c3134
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.7"
+    version: "4.0.0"
   version:
     dependency: "direct main"
     description:
@@ -493,10 +509,10 @@ packages:
     dependency: transitive
     description:
       name: webkit_inspection_protocol
-      sha256: "67d3a8b6c79e1987d19d848b0892e582dbb0c66c57cc1fef58a177dd2aa2823d"
+      sha256: "87d3f2333bb240704cd3f1c6b5b7acd8a10e7f0bc28c28dcf14e782014f4a572"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   yaml:
     dependency: transitive
     description:

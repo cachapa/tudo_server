@@ -115,7 +115,7 @@ class TudoServer {
         ? Response.forbidden('Invalid token')
         : Response.ok(jsonEncode({
             'user_id': userId,
-            'changeset': await _buildChangeset(userId),
+            'changeset': await _crdt.getChangeset(exceptNodeId: userId),
           }));
   }
 
@@ -152,18 +152,9 @@ class TudoServer {
       return Response.forbidden('$e');
     }
 
-    final changeset = await _buildChangeset(userId, peerId);
+    final changeset = await _crdt.getChangeset(exceptNodeId: peerId);
     return Response.ok(jsonEncode(changeset));
   }
-
-  Future<CrdtChangeset> _buildChangeset(String userId, [String? peerId]) =>
-      CrdtSync.buildChangeset(
-        _crdt,
-        _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
-        isClient: false,
-        peerId: peerId,
-        afterHlc: Hlc.zero(_crdt.nodeId),
-      );
 
   Future<Response> _wsHandler(Request request, String userId) async {
     try {
@@ -178,8 +169,19 @@ class TudoServer {
         CrdtSync.server(
           _crdt,
           webSocket,
-          changesetQueries:
-              _queries.map((table, sql) => MapEntry(table, (sql, [userId]))),
+          changesetBuilder: (
+                  {exceptNodeId,
+                  modifiedAfter,
+                  modifiedOn,
+                  onlyNodeId,
+                  onlyTables}) =>
+              _crdt.getChangeset(
+                  customQueries: _queries
+                      .map((table, sql) => MapEntry(table, (sql, [userId]))),
+                  onlyNodeId: onlyNodeId,
+                  exceptNodeId: exceptNodeId,
+                  modifiedOn: modifiedOn,
+                  modifiedAfter: modifiedAfter),
           validateRecord: _validateRecord,
           onConnect: (nodeId, __) => print(
               '${_getName(userId)} (${nodeId.short}): connect [${++_clientCount}]'),
