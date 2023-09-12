@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [master]
   release:
-    types: [published]
+    types: [released]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
