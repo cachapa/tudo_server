@@ -6,8 +6,11 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  release:
-    types: [released]
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,8 +24,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      - name: Determine ref
+        id: get-ref
+        run: |
+          input_ref="${{ inputs.ref }}"
+          github_ref="${{ github.sha }}"
+          ref="${input_ref:-$github_ref}"
+          echo "ref=$ref" >> $GITHUB_OUTPUT
+          
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.get-ref.outputs.ref }}        
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2.2.0
@@ -61,7 +75,7 @@ jobs:
             type=ref,event=pr
             # Tag with git tag on release
             type=ref,event=tag
-            type=raw,value=release,enable=${{ github.event_name == 'release' }}
+            type=raw,value=release,enable=${{ github.event_name == 'workflow_call' }}
 
       - name: Build and push image
         uses: docker/build-push-action@v4.1.1
