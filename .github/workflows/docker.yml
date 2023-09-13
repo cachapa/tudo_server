@@ -63,6 +63,8 @@ jobs:
         id: metadata
         uses: docker/metadata-action@v4
         with:
+          # Small hack to pick up the right context when called with a release tag
+          context: ${{ inputs.ref != '' && 'git' || 'workflow'}}
           flavor: |
             # Disable latest tag
             latest=false
