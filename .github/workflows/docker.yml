@@ -77,7 +77,7 @@ jobs:
             type=ref,event=pr
             # Tag with git tag on release
             type=ref,event=tag
-            type=raw,value=release,enable=${{ github.event_name == 'workflow_call' }}
+            type=raw,value=release,enable=${{ inputs.ref != '' }}
 
       - name: Build and push image
         uses: docker/build-push-action@v4.1.1
