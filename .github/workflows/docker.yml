@@ -61,7 +61,7 @@ jobs:
 
       - name: Generate docker image tags
         id: metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           # Small hack to pick up the right context when called with a release tag
           context: ${{ inputs.ref != '' && 'git' || 'workflow'}}
