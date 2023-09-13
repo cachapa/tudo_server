@@ -48,3 +48,10 @@ jobs:
         with:
           tag_name: "v${{ github.run_number }}"
           release_name: "v${{ github.run_number }}"
+
+  docker_release:
+    uses: ./.github/workflows/docker.yml
+    needs: build
+    secrets: inherit
+    with:
+      ref: "v${{ github.run_number }}"
