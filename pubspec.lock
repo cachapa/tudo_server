@@ -85,18 +85,18 @@ packages:
     dependency: transitive
     description:
       name: crdt
-      sha256: "9c1fef436600e80fc7e9e1668d822d0632ee3c277a49282e1eb0afb3a312f7fd"
+      sha256: "96c19779c611ca82b1bd5bfeaca1d148e55704153dd04e606eafed25e5f925b3"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.2"
+    version: "5.1.1"
   crdt_sync:
     dependency: "direct main"
     description:
       name: crdt_sync
-      sha256: b8058163a804e42781a842503d5ad2c3d7c7ad046f908aae7660de780da56722
+      sha256: c4d2e5c05949d28184878bd32e698fc999d5474145132e11f7835acc468ee1c2
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.0.2"
   crypto:
     dependency: transitive
     description:
@@ -269,10 +269,10 @@ packages:
     dependency: "direct main"
     description:
       name: postgres_crdt
-      sha256: "274a4894ea0d35220934debc6f93f5961bb38a5a351640875ecc956e239703cc"
+      sha256: e5590662bae21cc680000b0646a26f4341037be49453d011c4d6cc7561389928
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "2.1.0"
   pub_semver:
     dependency: transitive
     description:
@@ -381,10 +381,10 @@ packages:
     dependency: transitive
     description:
       name: sql_crdt
-      sha256: "6d9af96ee8a45be252ad9fbff7aed785a61ab16862a47d187ca489bdeba060d4"
+      sha256: "7a485f74f65690c07d74294a9ae39765a7279830c7cacfbd01164dc74cc45ebd"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "2.1.0"
   sqlparser:
     dependency: transitive
     description:

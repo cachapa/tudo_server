@@ -8,10 +8,10 @@ environment:
 
 dependencies:
   args: ^2.4.2
-  crdt_sync: ^1.0.1
+  crdt_sync: ^1.0.2
 #    path: ../../crdt_sync
   http: ^1.1.0
-  postgres_crdt: ^2.0.0
+  postgres_crdt: ^2.1.0
 #    path: ../../postgres_crdt
   rxdart: ^0.27.7
   shelf: ^1.4.1
