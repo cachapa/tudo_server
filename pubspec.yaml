@@ -11,7 +11,7 @@ dependencies:
   crdt_sync: ^1.0.7
 #    path: ../../crdt_sync
   http: ^1.1.0
-  postgres_crdt: ^2.1.1
+  postgres_crdt: ^2.1.2
 #    path: ../../crdt/postgres_crdt
   rxdart: ^0.27.7
   shelf: ^1.4.1
