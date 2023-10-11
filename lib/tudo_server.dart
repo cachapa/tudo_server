@@ -115,7 +115,11 @@ class TudoServer {
         ? Response.forbidden('Invalid token')
         : Response.ok(jsonEncode({
             'user_id': userId,
-            'changeset': await _crdt.getChangeset(exceptNodeId: userId),
+            'changeset': await _crdt.getChangeset(
+              customQueries: _queries
+                  .map((table, sql) => MapEntry(table, (sql, [userId]))),
+              exceptNodeId: userId,
+            ),
           }));
   }
 
@@ -176,6 +180,7 @@ class TudoServer {
                   onlyNodeId,
                   onlyTables}) =>
               _crdt.getChangeset(
+                  onlyTables: onlyTables,
                   customQueries: _queries
                       .map((table, sql) => MapEntry(table, (sql, [userId]))),
                   onlyNodeId: onlyNodeId,
