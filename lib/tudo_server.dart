@@ -14,8 +14,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'db_util.dart';
 import 'extensions.dart';
 
-const _queries = {
-  'users': '''
+Map<String, Query> _queries(String userId) => {
+      'users': '''
     SELECT users.id, users.name, users.is_deleted, users.hlc FROM
       (SELECT user_id, max(created_at) AS created_at FROM
         (SELECT list_id FROM user_lists WHERE user_id = ?1 AND is_deleted = 0) AS list_ids
@@ -24,19 +24,19 @@ const _queries = {
       ) AS user_ids
     JOIN users ON users.id = user_ids.user_id
   ''',
-  'user_lists': '''
+      'user_lists': '''
     SELECT user_lists.list_id, user_id, position, user_lists.created_at, is_deleted, hlc FROM
       (SELECT list_id, created_at FROM user_lists WHERE user_id = ?1) AS own_lists
     JOIN user_lists ON own_lists.list_id = user_lists.list_id
   ''',
-  'lists': '''
+      'lists': '''
     SELECT * FROM (SELECT lists.id, lists.name, lists.color, lists.creator_id,
       lists.created_at, lists.is_deleted, lists.hlc, lists.node_id,
       CASE WHEN lists.modified > user_lists.modified THEN lists.modified ELSE user_lists.modified END AS modified
     FROM user_lists
     JOIN lists ON list_id = lists.id AND user_id = ?1 AND user_lists.is_deleted = 0) a
   ''',
-  'todos': '''
+      'todos': '''
     SELECT * FROM (SELECT todos.id, todos.list_id, todos.name, todos.done, todos.position,
       todos.creator_id, todos.created_at, todos.done_at, todos.done_by,
       todos.is_deleted, todos.hlc, todos.node_id,
@@ -44,7 +44,7 @@ const _queries = {
       FROM user_lists
     JOIN todos ON user_lists.list_id = todos.list_id AND user_id = ?1 AND user_lists.is_deleted = 0) a
   ''',
-};
+    }.map((table, sql) => MapEntry(table, (sql, [userId])));
 
 final minimumVersion = Version(2, 3, 4);
 
@@ -115,11 +115,8 @@ class TudoServer {
         ? Response.forbidden('Invalid token')
         : Response.ok(jsonEncode({
             'user_id': userId,
-            'changeset': await _crdt.getChangeset(
-              customQueries: _queries
-                  .map((table, sql) => MapEntry(table, (sql, [userId]))),
-              exceptNodeId: userId,
-            ),
+            'changeset':
+                await _crdt.getChangeset(customQueries: _queries(userId)),
           }));
   }
 
@@ -156,7 +153,10 @@ class TudoServer {
       return Response.forbidden('$e');
     }
 
-    final changeset = await _crdt.getChangeset(exceptNodeId: peerId);
+    final changeset = await _crdt.getChangeset(
+      customQueries: _queries(userId),
+      exceptNodeId: peerId,
+    );
     return Response.ok(jsonEncode(changeset));
   }
 
@@ -181,8 +181,7 @@ class TudoServer {
                   onlyTables}) =>
               _crdt.getChangeset(
                   onlyTables: onlyTables,
-                  customQueries: _queries
-                      .map((table, sql) => MapEntry(table, (sql, [userId]))),
+                  customQueries: _queries(userId),
                   onlyNodeId: onlyNodeId,
                   exceptNodeId: exceptNodeId,
                   modifiedOn: modifiedOn,
