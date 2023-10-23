@@ -51,7 +51,7 @@ final minimumVersion = Version(2, 3, 4);
 class TudoServer {
   late final SqlCrdt _crdt;
 
-  var _clientCount = 0;
+  final _clientIds = <String>{};
   var _userNames = <String, String>{};
 
   Future<void> serve({
@@ -187,10 +187,16 @@ class TudoServer {
                   modifiedOn: modifiedOn,
                   modifiedAfter: modifiedAfter),
           validateRecord: _validateRecord,
-          onConnect: (nodeId, __) => print(
-              '${_getName(userId)} (${nodeId.short}): connect [${++_clientCount}]'),
-          onDisconnect: (nodeId, code, reason) => print(
-              '${_getName(userId)} (${nodeId.short}): disconnect [${++_clientCount}] $code ${reason ?? ''}'),
+          onConnect: (nodeId, __) {
+            _clientIds.add(nodeId);
+            print(
+                '${_getName(userId)} (${nodeId.short}): connect [${_clientIds.length}]');
+          },
+          onDisconnect: (nodeId, code, reason) {
+            _clientIds.remove(nodeId);
+            print(
+                '${_getName(userId)} (${nodeId.short}): disconnect [${_clientIds.length}] $code ${reason ?? ''}');
+          },
           onChangesetReceived: (nodeId, recordCounts) => print(
               '⬇️ ${_getName(userId)} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
           onChangesetSent: (nodeId, recordCounts) => print(
