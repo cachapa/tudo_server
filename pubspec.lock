@@ -93,10 +93,10 @@ packages:
     dependency: "direct main"
     description:
       name: crdt_sync
-      sha256: "6472a29a20fda1d43b277b162bff494ae489814be3a926eb0364831b86deea39"
+      sha256: a1d0ae47104bccdc68fdc1d2a9761848d4d1a9bb7a9073c8b115bd4c7c58a69a
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.8"
+    version: "1.0.9"
   crypto:
     dependency: transitive
     description:
@@ -269,10 +269,10 @@ packages:
     dependency: "direct main"
     description:
       name: postgres_crdt
-      sha256: dcf34c2ecb7428a4ddb5a341bc2c78e5c95d4fe51ef5b6f5a77ff59f75c71e96
+      sha256: "42c1fa401e12f5caceb56bc8b7a0df31e3b74e218ca60c30ce52e648beeabcbf"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.3"
+    version: "2.1.4"
   pub_semver:
     dependency: transitive
     description:

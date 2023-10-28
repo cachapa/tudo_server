@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crdt_sync/crdt_sync.dart';
+import 'package:crdt_sync/crdt_sync_server.dart';
 import 'package:postgres_crdt/postgres_crdt.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
@@ -46,12 +47,15 @@ Map<String, Query> _queries(String userId) => {
   ''',
     }.map((table, sql) => MapEntry(table, (sql, [userId])));
 
+// Maximum time clients can remain connected without activity
+const maxIdleDuration = Duration(minutes: 5);
+
 final minimumVersion = Version(2, 3, 4);
 
 class TudoServer {
   late final SqlCrdt _crdt;
 
-  final _clientIds = <String>{};
+  final _connectedClients = <CrdtSync, DateTime>{};
   var _userNames = <String, String>{};
 
   Future<void> serve({
@@ -168,9 +172,9 @@ class TudoServer {
     }
 
     final handler = webSocketHandler(
-      pingInterval: Duration(seconds: 20),
       (WebSocketChannel webSocket) {
-        CrdtSync.server(
+        late CrdtSync syncClient;
+        syncClient = CrdtSync.server(
           _crdt,
           webSocket,
           changesetBuilder: (
@@ -188,24 +192,43 @@ class TudoServer {
                   modifiedAfter: modifiedAfter),
           validateRecord: _validateRecord,
           onConnect: (nodeId, __) {
-            _clientIds.add(nodeId);
+            _refreshClient(syncClient);
             print(
-                '${_getName(userId)} (${nodeId.short}): connect [${_clientIds.length}]');
+                '${_getName(userId)} (${nodeId.short}): connect [${_connectedClients.length}]');
           },
           onDisconnect: (nodeId, code, reason) {
-            _clientIds.remove(nodeId);
+            _connectedClients.remove(syncClient);
             print(
-                '${_getName(userId)} (${nodeId.short}): disconnect [${_clientIds.length}] $code ${reason ?? ''}');
+                '${_getName(userId)} (${nodeId.short}): disconnect [${_connectedClients.length}] $code ${reason ?? ''}');
           },
-          onChangesetReceived: (nodeId, recordCounts) => print(
-              '⬇️ ${_getName(userId)} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+          onChangesetReceived: (nodeId, recordCounts) {
+            _refreshClient(syncClient);
+            print(
+                '⬇️ ${_getName(userId)} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}');
+          },
           onChangesetSent: (nodeId, recordCounts) => print(
               '⬆️ ${_getName(userId)} (${nodeId.short}) ${recordCounts.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
           // verbose: true,
         );
       },
     );
+
     return await handler(request);
+  }
+
+  void _refreshClient(CrdtSync syncClient) {
+    final now = DateTime.now();
+    // Reset client's idle time
+    _connectedClients[syncClient] = now;
+    // Close stale connections
+    _connectedClients.forEach((client, lastAccess) {
+      final idleTime = now.difference(lastAccess);
+      print('idle time: ${idleTime.inSeconds}');
+      if (idleTime > maxIdleDuration) {
+        print('Closing idle client: (${syncClient.peerId!.short})');
+        client.close();
+      }
+    });
   }
 
   Handler _validateVersion(Handler innerHandler) => (request) {
