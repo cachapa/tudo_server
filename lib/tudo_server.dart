@@ -97,7 +97,7 @@ class TudoServer {
     final handler = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(_validateVersion)
-        .addHandler(router);
+        .addHandler(router.call);
 
     final server = await io.serve(handler, '0.0.0.0', port);
     print('Serving at http://${server.address.host}:${server.port}');
