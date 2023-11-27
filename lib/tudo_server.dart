@@ -17,34 +17,34 @@ import 'extensions.dart';
 
 Map<String, Query> _queries(String userId) => {
       'users': '''
-    SELECT users.id, users.name, users.is_deleted, users.hlc FROM
-      (SELECT user_id, max(created_at) AS created_at FROM
-        (SELECT list_id FROM user_lists WHERE user_id = ?1 AND is_deleted = 0) AS list_ids
-        JOIN user_lists ON user_lists.list_id = list_ids.list_id
-        GROUP BY user_lists.user_id
-      ) AS user_ids
-    JOIN users ON users.id = user_ids.user_id
-  ''',
+        SELECT users.id, users.name, users.is_deleted, users.hlc FROM
+          (SELECT user_id, max(created_at) AS created_at FROM
+            (SELECT list_id FROM user_lists WHERE user_id = ?1 AND is_deleted = 0) AS list_ids
+            JOIN user_lists ON user_lists.list_id = list_ids.list_id
+            GROUP BY user_lists.user_id
+          ) AS user_ids
+        JOIN users ON users.id = user_ids.user_id
+      ''',
       'user_lists': '''
-    SELECT user_lists.list_id, user_id, position, user_lists.created_at, is_deleted, hlc FROM
-      (SELECT list_id, created_at FROM user_lists WHERE user_id = ?1) AS own_lists
-    JOIN user_lists ON own_lists.list_id = user_lists.list_id
-  ''',
+        SELECT user_lists.list_id, user_id, position, user_lists.created_at, is_deleted, hlc FROM
+          (SELECT list_id, created_at FROM user_lists WHERE user_id = ?1) AS own_lists
+        JOIN user_lists ON own_lists.list_id = user_lists.list_id
+      ''',
       'lists': '''
-    SELECT * FROM (SELECT lists.id, lists.name, lists.color, lists.creator_id,
-      lists.created_at, lists.is_deleted, lists.hlc, lists.node_id,
-      CASE WHEN lists.modified > user_lists.modified THEN lists.modified ELSE user_lists.modified END AS modified
-    FROM user_lists
-    JOIN lists ON list_id = lists.id AND user_id = ?1 AND user_lists.is_deleted = 0) a
-  ''',
+        SELECT * FROM (SELECT lists.id, lists.name, lists.color, lists.creator_id,
+          lists.created_at, lists.is_deleted, lists.hlc, lists.node_id,
+          CASE WHEN lists.modified > user_lists.modified THEN lists.modified ELSE user_lists.modified END AS modified
+        FROM user_lists
+        JOIN lists ON list_id = lists.id AND user_id = ?1 AND user_lists.is_deleted = 0) a
+      ''',
       'todos': '''
-    SELECT * FROM (SELECT todos.id, todos.list_id, todos.name, todos.done, todos.position,
-      todos.creator_id, todos.created_at, todos.done_at, todos.done_by,
-      todos.is_deleted, todos.hlc, todos.node_id,
-      CASE WHEN todos.modified > user_lists.modified THEN todos.modified ELSE user_lists.modified END AS modified
-      FROM user_lists
-    JOIN todos ON user_lists.list_id = todos.list_id AND user_id = ?1 AND user_lists.is_deleted = 0) a
-  ''',
+        SELECT * FROM (SELECT todos.id, todos.list_id, todos.name, todos.done, todos.position,
+          todos.creator_id, todos.created_at, todos.done_at, todos.done_by,
+          todos.is_deleted, todos.hlc, todos.node_id,
+          CASE WHEN todos.modified > user_lists.modified THEN todos.modified ELSE user_lists.modified END AS modified
+          FROM user_lists
+        JOIN todos ON user_lists.list_id = todos.list_id AND user_id = ?1 AND user_lists.is_deleted = 0) a
+      ''',
     }.map((table, sql) => MapEntry(table, (sql, [userId])));
 
 // Maximum time clients can remain connected without activity
@@ -73,6 +73,7 @@ class TudoServer {
         port: dbPort,
         username: dbUsername,
         password: dbPassword,
+        sslMode: SslMode.disable,
       );
     } catch (e) {
       print('Failed to open Postgres database.');
@@ -223,7 +224,6 @@ class TudoServer {
     // Close stale connections
     _connectedClients.forEach((client, lastAccess) {
       final idleTime = now.difference(lastAccess);
-      print('idle time: ${idleTime.inSeconds}');
       if (idleTime > maxIdleDuration) {
         print('Closing idle client: (${syncClient.peerId!.short})');
         client.close();
