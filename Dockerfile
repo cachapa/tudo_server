@@ -1,4 +1,4 @@
-FROM dart:3@sha256:f5ce3ec89ac32a5e6ddb05a5110a5f235d4f36908ef1614b728fe7bcab9bb201 as build
+FROM dart:stable as build
 
 WORKDIR /build
 COPY pubspec.* .
