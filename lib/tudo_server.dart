@@ -96,6 +96,7 @@ class TudoServer {
       ..post('/auth/login', _login)
       ..post('/lists/<userId>/<listId>', _joinList)
       ..get('/changeset/<userId>/<peerId>', _getChangeset)
+      ..delete('/user/<userId>', _deleteData)
       ..get('/ws/<userId>', _wsHandler);
 
     final handler = Pipeline()
@@ -167,6 +168,29 @@ class TudoServer {
       exceptNodeId: peerId,
     );
     return Response.ok(jsonEncode(changeset));
+  }
+
+  Future<Response> _deleteData(Request request, String userId) async {
+    try {
+      await _validateAuth(request, userId);
+    } catch (e) {
+      return Response.forbidden('$e');
+    }
+
+    await _crdt.transaction((txn) async {
+      // Anonymize user
+      await txn.execute(
+        '''
+          INSERT INTO users (id, name) VALUES (?1, ?2)
+          ON CONFLICT (id) DO UPDATE SET name = ?2
+        ''',
+        [userId, ''],
+      );
+      // Unlink all lists
+      await txn.execute('DELETE FROM user_lists WHERE user_id = ?1', [userId]);
+    });
+
+    return Response(HttpStatus.noContent);
   }
 
   Future<Response> _wsHandler(Request request, String userId) async {
