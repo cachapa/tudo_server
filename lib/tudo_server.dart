@@ -17,13 +17,17 @@ import 'extensions.dart';
 
 Map<String, Query> _queries(String userId) => {
       'users': '''
-        SELECT users.id, users.name, users.is_deleted, users.hlc FROM
+        SELECT * FROM
+        (SELECT users.id, users.name, users.is_deleted, users.hlc, users.modified, users.node_id FROM users
+          WHERE id = ?1
+        UNION
+        SELECT users.id, users.name, users.is_deleted, users.hlc, users.modified, users.node_id FROM
           (SELECT user_id, max(created_at) AS created_at FROM
             (SELECT list_id FROM user_lists WHERE user_id = ?1 AND is_deleted = 0) AS list_ids
             JOIN user_lists ON user_lists.list_id = list_ids.list_id
             GROUP BY user_lists.user_id
           ) AS user_ids
-        JOIN users ON users.id = user_ids.user_id
+        JOIN users ON users.id = user_ids.user_id) _
       ''',
       'user_lists': '''
         SELECT user_lists.list_id, user_id, position, user_lists.created_at, is_deleted, hlc FROM
