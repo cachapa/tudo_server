@@ -11,7 +11,7 @@ Note that `tudo_server` uses PostgresSQL database to store its data, so make sur
 The simplest way to run the program is to run main.dart:
 
 ``` shell
-$ pub get
+$ dart pub get
 $ dart bin/main.dart
 Serving at http://localhost:8080
 ```
@@ -19,7 +19,7 @@ Serving at http://localhost:8080
 However, you might prefer to precompile the program into native code, making it much more efficient:
 
 ``` shell
-$ pub get
+$ dart pub get
 $ dart compile exe bin/main.dart -o tudo_server
 $ ./tudo_server
 Serving at http://localhost:8080
