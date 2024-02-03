@@ -133,10 +133,10 @@ packages:
     dependency: "direct main"
     description:
       name: http
-      sha256: "38dce67ce909c338754840e2a1479c2c11347a2fc7ec3d5b166a5118a8a201db"
+      sha256: a2bbf9d017fcced29139daa8ed2bba4ece450ab222871df93ca9eec6f80c34ba
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.2.0"
   http_methods:
     dependency: transitive
     description:
@@ -261,18 +261,18 @@ packages:
     dependency: transitive
     description:
       name: postgres
-      sha256: b019d64aa7191da978e73e53f59743723514c6f01ebbb5e917aed64d484b10e3
+      sha256: "0178bf02b520ad5d40ac9d83a77a337177b4a0b5599b3e0ed3c356f626457aaf"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.8"
   postgres_crdt:
     dependency: "direct main"
     description:
       name: postgres_crdt
-      sha256: a46ffd6df2a0ca97d7c02f6c94d3415e20605a4fff5bf3da8f202d16a24e8830
+      sha256: "32ad0c20c2a87270f6e90b14b8bd81e35f062ab1f0d20b550ffef4047de21ba6"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.5"
+    version: "2.1.5+1"
   pub_semver:
     dependency: transitive
     description:
@@ -509,10 +509,10 @@ packages:
     dependency: "direct main"
     description:
       name: web_socket_channel
-      sha256: d88238e5eac9a42bb43ca4e721edba3c08c6354d4a53063afaa568516217621b
+      sha256: "939ab60734a4f8fa95feacb55804fa278de28bdeef38e616dc08e44a84adea23"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.4.3"
   webkit_inspection_protocol:
     dependency: transitive
     description:
