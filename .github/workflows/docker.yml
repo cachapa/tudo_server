@@ -6,11 +6,8 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
-  workflow_call:
-    inputs:
-      ref:
-        required: false
-        type: string
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -71,7 +68,7 @@ jobs:
             type=ref,event=pr
             # Tag with git tag on release
             type=ref,event=tag
-            type=raw,value=release,enable=${{ inputs.ref != '' }}
+            type=raw,value=release,enable=${{ github.event_name == 'release' }}
 
       - name: Build and push image
         uses: docker/build-push-action@v4.1.1
