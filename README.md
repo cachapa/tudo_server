@@ -27,6 +27,10 @@ Serving at http://localhost:8080
 
 Run `tudo_server --help` for server configuration options.
 
+### Docker
+
+You can also run `tudo_server` in Docker. The easiest start is to copy the [docker-compose.yml](docker-compose.yml) file into a folder and run `docker compose up`. This will start `tudo_server` and a PostgreSQL database, listening on port 8080. If necessary, update the tag used for the `tudo_server` image to the latest release.
+
 ## Hosting
 
 While this project can be hosted from any internet-accessible device, keep in mind:
