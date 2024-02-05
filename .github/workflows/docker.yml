@@ -1,16 +1,14 @@
 name: Build and Push Docker Images
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ inputs.version }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -25,7 +23,7 @@ jobs:
       - name: Determine ref
         id: get-ref
         run: |
-          input_ref="${{ inputs.ref }}"
+          input_ref=${{ inputs.version }}
           github_ref="${{ github.sha }}"
           ref="${input_ref:-$github_ref}"
           echo "ref=$ref" >> $GITHUB_OUTPUT

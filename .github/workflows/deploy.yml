@@ -1,9 +1,7 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - 'release'
+  workflow_dispatch
 
 concurrency:
   group: "deploy"
@@ -52,3 +50,9 @@ jobs:
         with:
           tag_name: "v${{ github.run_number }}"
           release_name: "v${{ github.run_number }}"
+
+  Docker:
+    uses: ./.github/workflows/docker.yml
+    needs: build
+    with:
+      version: "v${{ github.run_number }}"
