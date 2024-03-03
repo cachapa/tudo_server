@@ -10,14 +10,14 @@ dependencies:
   args: ^2.4.2
   crdt_sync: ^1.0.9
 #    path: ../../crdt/crdt_sync
-  http: ^1.2.0
-  postgres_crdt: ^2.1.5+1
+  http: ^1.2.1
+  postgres_crdt: ^3.0.0+1
 #    path: ../../crdt/postgres_crdt
   rxdart: ^0.27.7
   shelf: ^1.4.1
   shelf_router: ^1.1.4
   shelf_web_socket: ^1.0.4
-  web_socket_channel: ^2.4.3
+  web_socket_channel: ^2.4.4
   version: ^3.0.2
 
 dev_dependencies:
