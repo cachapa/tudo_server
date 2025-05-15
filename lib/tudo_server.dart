@@ -11,6 +11,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:version/version.dart';
 
+import 'db_util.dart';
 import 'extensions.dart';
 
 Map<String, Query> _queries(String userId) => {
@@ -58,7 +59,7 @@ class TudoServer {
   late final SqlCrdt _crdt;
 
   final _connectedClients = <CrdtSync, DateTime>{};
-  final _userNames = <String, String>{};
+  var _userNames = <String, String>{};
 
   Future<void> serve({
     required int port,
@@ -68,26 +69,26 @@ class TudoServer {
     String? dbUsername,
     String? dbPassword,
   }) async {
-    // try {
-    //   _crdt = await PostgresCrdt.open(
-    //     database,
-    //     host: dbHost,
-    //     port: dbPort,
-    //     username: dbUsername,
-    //     password: dbPassword,
-    //     sslMode: SslMode.disable,
-    //   );
-    // } catch (e) {
-    //   print('Failed to open Postgres database.');
-    //   rethrow;
-    // }
-    // await DbUtil.createTables(_crdt);
+    try {
+      _crdt = await PostgresCrdt.open(
+        database,
+        host: dbHost,
+        port: dbPort,
+        username: dbUsername,
+        password: dbPassword,
+        sslMode: SslMode.disable,
+      );
+    } catch (e) {
+      print('Failed to open Postgres database.');
+      rethrow;
+    }
+    await DbUtil.createTables(_crdt);
 
     // Watch and cache user names
-    // _crdt.watch("SELECT id, name FROM users WHERE name <> ''").listen(
-    //     (records) => _userNames = {
-    //           for (final r in records) r['id'] as String: r['name'] as String
-    //         });
+    _crdt.watch("SELECT id, name FROM users WHERE name <> ''").listen(
+        (records) => _userNames = {
+              for (final r in records) r['id'] as String: r['name'] as String
+            });
 
     final router = Router()
       ..head('/check_version', _checkVersion)
@@ -259,7 +260,6 @@ class TudoServer {
 
   Handler _validateVersion(Handler innerHandler) => (request) {
         final userAgent = request.headers[HttpHeaders.userAgentHeader]!;
-        print(userAgent);
         final version = Version.parse(userAgent.substring(
             userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
         return version >= minimumVersion
