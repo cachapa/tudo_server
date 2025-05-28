@@ -1,18 +1,15 @@
-name: Deploy
+name: Deploy tudo.cachapa.net
 
 on:
-  workflow_dispatch
-
-concurrency:
-  group: "deploy"
-  cancel-in-progress: true
-
-permissions:
-  packages: write # Required for calling the docker workflow
-  contents: write # Required for creating releases
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
 
 jobs:
-  build:
+  deploy:
+    name: Deploy
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -25,34 +22,14 @@ jobs:
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Clean slate
-        run: ssh server 'rm -fr tudo_server'
-      - name: Checkout
-        run: ssh server 'git clone git@github.com:cachapa/tudo_server.git'
-      - name: Get dependencies
-        run: ssh server '/opt/dart-sdk/bin/dart pub get -C tudo_server'
-      - name: Build binary
-        run: ssh server '/opt/dart-sdk/bin/dart compile exe tudo_server/bin/main.dart -o tudo-server.new'
+      - name: Push latest build
+        run: rsync ssh tudo-server.arm-64.${{ inputs.version }} cachapa:tudo-server.new
+
       - name: Stop service
         run: ssh server 'systemctl --user stop tudo'
+
       - name: Replace binary
         run: ssh server 'mv tudo-server.new tudo-server'
+
       - name: Start service
         run: ssh server 'systemctl --user start tudo'
-      - name: Cleanup
-        run: ssh server 'rm -fr tudo_server'
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "v${{ github.run_number }}"
-          release_name: "v${{ github.run_number }}"
-
-  Docker:
-    uses: ./.github/workflows/docker.yml
-    needs: build
-    with:
-      version: "v${{ github.run_number }}"
