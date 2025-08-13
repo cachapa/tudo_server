@@ -55,6 +55,8 @@ const maxIdleDuration = Duration(minutes: 5);
 
 final minimumVersion = Version(2, 3, 4);
 
+final skipPaths = {'list'};
+
 class TudoServer {
   late final SqlCrdt _crdt;
 
@@ -92,6 +94,7 @@ class TudoServer {
 
     final router = Router()
       ..head('/check_version', _checkVersion)
+      ..get('/list/<listId>', _redirectList)
       ..post('/auth/login', _login)
       ..post('/lists/<userId>/<listId>', _joinList)
       ..get('/changeset/<userId>/<peerId>', _getChangeset)
@@ -109,6 +112,11 @@ class TudoServer {
 
   /// By the time we arrive here, the version has already been checked
   Response _checkVersion(Request request) => Response(HttpStatus.noContent);
+
+  Future<Response> _redirectList(Request request, String listId) async {
+    return Response(302,
+        headers: {HttpHeaders.locationHeader: 'tudo://list/$listId'});
+  }
 
   Future<Response> _login(Request request) async {
     final token = request.headers[HttpHeaders.authorizationHeader]
@@ -259,6 +267,11 @@ class TudoServer {
   }
 
   Handler _validateVersion(Handler innerHandler) => (request) {
+        // Allow exceptions through
+        if (skipPaths.contains(request.requestedUri.path.split('/')[1])) {
+          return innerHandler(request);
+        }
+
         final userAgent = request.headers[HttpHeaders.userAgentHeader]!;
         final version = Version.parse(userAgent.substring(
             userAgent.indexOf('/') + 1, userAgent.indexOf(' ')));
