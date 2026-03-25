@@ -11,8 +11,12 @@ void main(List<String> args) async {
     ..addOption('db-port', defaultsTo: '5432')
     ..addOption('db-username')
     ..addOption('db-password')
-    ..addFlag('help',
-        abbr: 'h', negatable: false, help: 'Display this help and exit');
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      negatable: false,
+      help: 'Display this help and exit',
+    );
 
   try {
     final result = argParser.parse(args);

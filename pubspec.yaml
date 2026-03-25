@@ -2,17 +2,30 @@ name: tudo_server
 description: Server counterpart to the tudo app
 version: 1.0.0
 homepage: https://github.com/cachapa/tudo_server
+publish_to: none
 
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.10.0
 
 dependencies:
-  args: ^2.7.0
-  crdt_sync: ^1.0.10
-#    path: ../../crdt/crdt_sync
-  http: ^1.4.0
-  postgres_crdt: ^3.0.3
+#  postgres_crdt: #^6.0.0
 #    path: ../../crdt/postgres_crdt
+#    git:
+#      url: https://github.com/cachapa/postgres_crdt.git
+#      ref: v6
+  sqlite_crdt: #^6.0.0
+#    path: ../../crdt/sqlite_crdt
+    git:
+      url: https://github.com/cachapa/sqlite_crdt.git
+      ref: v6
+  crdt_sync: #^6.0.0
+#    path: ../../crdt/crdt_sync
+    git:
+      url: https://github.com/cachapa/crdt_sync.git
+      ref: v6
+
+  args: ^2.7.0
+  http: ^1.6.0
   rxdart: ^0.28.0
   shelf: ^1.4.2
   shelf_router: ^1.1.4

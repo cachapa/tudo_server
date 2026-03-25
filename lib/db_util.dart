@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:postgres_crdt/postgres_crdt.dart';
+import 'package:sqlite_crdt/sqlite_crdt.dart';
 
 /// Convenience class to handle database creation and upgrades
 class DbUtil {
   DbUtil._();
 
-  static Future<void> createTables(SqlCrdt crdt) async {
-    await crdt.execute('''
+  static Future<void> createTables(Database db) async {
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS auth (
         token TEXT NOT NULL,
         user_id TEXT NOT NULL,
@@ -15,14 +15,14 @@ class DbUtil {
         PRIMARY KEY (token)
       )
     ''');
-    await crdt.execute('''
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS users (
         id TEXT NOT NULL,
         name TEXT,
         PRIMARY KEY (id)
       )
     ''');
-    await crdt.execute('''
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS user_lists (
         user_id TEXT NOT NULL,
         list_id TEXT NOT NULL,
@@ -31,7 +31,7 @@ class DbUtil {
         PRIMARY KEY (user_id, list_id)
       )
     ''');
-    await crdt.execute('''
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS lists (
         id TEXT NOT NULL,
         name TEXT NOT NULL,
@@ -41,7 +41,7 @@ class DbUtil {
         PRIMARY KEY (id)
       )
     ''');
-    await crdt.execute('''
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS todos (
         id TEXT NOT NULL,
         list_id TEXT NOT NULL,
